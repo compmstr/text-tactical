@@ -24,11 +24,38 @@
            (.cursor-pos! console [label-start (+ items-start i)])
            (.write! console (str (if (= i selected) \> \space) (:label item))))))))
 
+(defn- menu-keymap
+  [menu items selected callback]
+  (let [call-callback (fn [action]
+                        (when callback
+                          (callback
+                           {:action action
+                            :selected (nth items @selected)})))]
+    {"Select Next" {:key "DOWN"
+                    :on-press (fn [_]
+                                (println "select next")
+                                (menu :select-next)
+                                (call-callback :select-next))}
+     "Select Prev" {:key "UP"
+                    :on-press (fn [_]
+                                (println "select prev")
+                                (menu :select-prev)
+                                (call-callback :select-prev))}
+     "Activate" {:key "ENTER"
+                 :on-press (fn [_]
+                             (println "activate")
+                             (menu :activate)
+                             (call-callback :activate))}
+     "Cancel" {:key "ESCAPE"
+               :on-press (fn [_]
+                           (println "cancel")
+                           (call-callback :cancel))}}))
+
 (defn create-menu
   "Creates a menu from a list of items
    label is the label at the top of the menu
    items is a list/vector of maps with the following keys
-   :name :label (:callback or nil)
+   :id :label (:callback or nil)
     callback for item will be called on activate with that item selected
     you can also handle the actions through the bind callback
    returns a function that has the following spec:
@@ -61,35 +88,28 @@
           (callback)
           (println "No callback for menu item"))
         :bind
-        (let [[con callback] args
-              call-callback (fn [action]
-                              (when callback
-                                (callback
-                                 {:action action
-                                  :selected @selected})))]
+        (let [[con callback] args]
           (events/bind-keymap (.component con)
-                              {"Select Next" {:key "DOWN"
-                                              :on-press (fn [_]
-                                                          (println "select next")
-                                                          (menu-cmds :select-next)
-                                                          (call-callback :select-next))}
-                               "Select Prev" {:key "UP"
-                                              :on-press (fn [_]
-                                                          (println "select prev")
-                                                          (menu-cmds :select-prev)
-                                                          (call-callback :select-prev))}
-                               "Activate" {:key "ENTER"
-                                           :on-press (fn [_]
-                                                       (println "activate")
-                                                       (menu-cmds :activate)
-                                                       (call-callback :activate))}
-                               "Cancel" {:key "ESCAPE"
-                                         :on-press (fn [_]
-                                                     (println "cancel")
-                                                     (call-callback :cancel))}}))
+                              (menu-keymap menu-cmds items selected callback)
+                              true))
         :draw
-          (let [con (first args)]
-            (draw-menu con label items @selected))
-          :draw-at
-          (let [[con loc] args]
-            (draw-menu con loc label items @selected))))))
+        (let [con (first args)]
+          (draw-menu con label items @selected))
+        :draw-at
+        (let [[con loc] args]
+          (draw-menu con loc label items @selected))))))
+
+(defn create-menu-callback
+  "Create a menu callback function which takes a map of
+   :<action> => {:<selected_name> => fn ...} ...
+   special actions :before and :after to trigger on every event"
+  [callbacks]
+  (fn [{:keys [action selected]}]
+    (println "inside created menu callback -- action:" action "selected:" selected)
+    (when-let [before-callback (:before callbacks)]
+      (before-callback))
+    (when-let [action-map (action callbacks)]
+      (when-let [action-callback (action-map (:id selected))]
+        (action-callback)))
+    (when-let [after-callback (:after callbacks)]
+      (after-callback))))
