@@ -1,4 +1,5 @@
 (ns swing-text.ui
+  (use swing-text.util)
   (import [javax.swing JComponent JFrame]
           [java.awt Color Dimension Font Graphics Graphics2D Rectangle GraphicsEnvironment FontMetrics Window]
           java.awt.font.FontRenderContext
@@ -27,29 +28,6 @@
                    :font-y-offset (- (int (.getMinY char-bounds)))}]
          (.dispose frame)
          info)))))
-
-(defn looped-inc
-  "Generates an inc function that always returns between 0 and high"
-  [high x]
-  (let [new-x (inc x)]
-    (if (< new-x high)
-      new-x
-      (rem new-x high))))
-(defn looped-dec
-  "Generates a dec function that always returns between 0 and high"
-  [high x]
-  (let [new-x (dec x)]
-    (if (< new-x 0)
-      (+ high new-x)
-      new-x)))
-(defn loop-num
-  "Loops a number to between 0 and high"
-  [high x]
-  (if (< x 0)
-    (recur high (+ high x))
-    (if (>= x high)
-      (rem x high)
-      x)))
 
 ;;Generates a java interface: swing-text.Console
 ;;  can't reference using just Console for type hints or proxy
@@ -338,6 +316,29 @@
              (doto con
                (.cursor-pos! [x y])
                (.write! mid-line))))))))
+
+(defn draw-box-with-label
+  "Draw a box with a label, same args as draw-box, with the addition
+   of label and where
+   label - the label to draw
+   where - offset from side where to draw text
+     positive numbers are from the left
+     negative numbers are from the right
+     nil is centered"
+  ([^swing_text.ui.Console con loc size label where]
+     (draw-box-with-label con loc size box-chars label where))
+  ([^swing_text.ui.Console con [x y :as loc] [w h :as size] chars label where]
+     (draw-box con loc size chars)
+     (let [label-x (+ x
+                      (cond
+                       (nil? where)
+                       (- (quot w 2) (quot (count label) 2))
+                       (neg? where)
+                       (- w (count label) (- where))
+                       true
+                       where))]
+       (.cursor-pos! con [label-x y])
+       (.write! con label))))
 
 (defn close-all-windows
   []
