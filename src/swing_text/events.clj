@@ -1,6 +1,7 @@
 (ns swing-text.events
   (require [clojure.string :as str])
-  (import [javax.swing JTextField JComponent JPanel JFrame JButton KeyStroke AbstractAction Timer]
+  (import [javax.swing JTextField JComponent JPanel JFrame JButton KeyStroke AbstractAction Timer
+           ActionMap InputMap ComponentInputMap]
           [java.awt BorderLayout]
           [java.awt.event ActionEvent ActionListener KeyListener]))
 
@@ -111,7 +112,39 @@
                        (.removeKeyListener component this)
                        (callback)))))
 
+(def component-binding-stacks
+  "Stacks of action/input maps keyed by components"
+  (atom {}))
+(defn push-keymap
+  [component keymap]
+  (let [existing-stack (or (@component-binding-stacks component) '())
+        cur-maps {:input-map (.getInputMap component JComponent/WHEN_IN_FOCUSED_WINDOW)
+                  :action-map (.getActionMap component)}
+        new-stack (conj existing-stack cur-maps)]
+    (doto component
+      (.setInputMap JComponent/WHEN_IN_FOCUSED_WINDOW (ComponentInputMap. component))
+      (.setActionMap (ActionMap.))
+      (bind-keymap keymap))
+    (swap! component-binding-stacks
+           assoc component new-stack)))
+
+(defn pop-keymap
+  [component]
+  (let [existing-stack (or (@component-binding-stacks component) '())
+        to-restore (first existing-stack)
+        new-stack (rest existing-stack)]
+    (when to-restore
+      (doto component
+        (.setInputMap JComponent/WHEN_IN_FOCUSED_WINDOW (:input-map to-restore))
+        (.setActionMap (:action-map to-restore))))
+    (swap! component-binding-stacks
+           assoc component new-stack)))
+
 ;;-----------Example code----------
+(def test-map1 {"Action 1" {:key "SPACE"
+                            :on-press (fn [e] (println "Action 1 map 1"))}})
+(def test-map2 {"Action 1" {:key "SPACE"
+                            :on-press (fn [e] (println "Action 1 map 2"))}})
 (def example-key-map {"Action 1" (stateful-key
                                   {:key "SPACE"})
                       "Action 2" (stateful-key
