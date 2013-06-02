@@ -9,15 +9,15 @@
   ([console [x y] label items selected]
      (let [text-height (count items)
            text-width (apply max (map count (map :label items)))
-           box-width (+ text-width 5)
-           box-height (+ text-height 4)
+           box-width (+ text-width 3)
+           box-height (+ text-height 2)
            [screen-w screen-h] (.grid-size console)
            x (or x (- (quot screen-w 2)
                       (quot box-width 2)))
            y (or y (- (quot screen-h 2)
                       (quot box-height 2)))
-           label-start (+ x 3)
-           items-start (+ y 2)]
+           label-start (inc x)
+           items-start (inc y)]
        (ui/draw-box-with-label console [x y] [box-width box-height] label 1)
        (doseq [i (range (count items))]
          (let [item (nth items i)]
