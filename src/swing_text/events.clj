@@ -115,7 +115,13 @@
 (def component-binding-stacks
   "Stacks of action/input maps keyed by components"
   (atom {}))
-(defn push-keymap
+(defn reset-keymap-stack!
+  [component]
+  (swap! component-binding-stacks dissoc component))
+(defn reset-keymap-stacks!
+  []
+  (reset! component-binding-stacks {}))
+(defn push-keymap!
   [component keymap]
   (let [existing-stack (or (@component-binding-stacks component) '())
         cur-maps {:input-map (.getInputMap component JComponent/WHEN_IN_FOCUSED_WINDOW)
@@ -128,7 +134,7 @@
     (swap! component-binding-stacks
            assoc component new-stack)))
 
-(defn pop-keymap
+(defn pop-keymap!
   [component]
   (let [existing-stack (or (@component-binding-stacks component) '())
         to-restore (first existing-stack)

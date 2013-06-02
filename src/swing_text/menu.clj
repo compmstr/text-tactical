@@ -92,6 +92,10 @@
           (events/bind-keymap (.component con)
                               (menu-keymap menu-cmds items selected callback)
                               true))
+        :push-bindings
+        (let [[con callback] args]
+          (events/push-keymap! (.component con)
+                              (menu-keymap menu-cmds items selected callback)))
         :draw
         (let [con (first args)]
           (draw-menu con label items @selected))
