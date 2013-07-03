@@ -46,9 +46,13 @@
   (repaint [this])
   (grid-size [this])
   (draw-size [this])
-  (mass-copy [this data]
+  (mass-copy! [this data]
     "Fill buffer with data, provided as seqable list of maps with keys:
      :char :fg :bg")
+  (blit! [this data rect]
+    "Fill buffer area with data, provided as seqable list of maps with keys:
+       :char :fg :bg
+     rect is specified as [x y w h]")
   )
 
 (defn capture-std-out
@@ -228,7 +232,7 @@
            (grid-size
              [this]
              [cols rows])
-            (mass-copy [this data]
+            (mass-copy! [this data]
               "Fill buffer with data, provided as seqable list of maps with keys:
                :char :fg :bg"
               (loop [data data
@@ -241,6 +245,26 @@
                   (recur (rest data)
                          (inc pos)
                          (second data)))))
+            (blit! [this data [x y w h]]
+              "Fill buffer area with data, provided as seqable list of maps with keys:
+                 :char :fg :bg
+               rect is specified as [x y w h]"
+              (let [[disp-w disp-h] (.grid-size this)
+                    start-pos (+ x (* y disp-w))
+                    line-end (dec (+ x w))
+                    line-skip (- disp-w (dec w))]
+                (loop [data data
+                       dest-pos start-pos
+                       elt (first data)]
+                  (when (not (empty? data))
+                    (aset-char chars dest-pos (or (:char elt) \space))
+                    (aset bg-colors dest-pos (or (:bg elt) @cur-bg))
+                    (aset fg-colors dest-pos (or (:fg elt) @cur-fg))
+                    (recur (rest data)
+                           (if (= line-end (mod dest-pos disp-w))
+                             (+ dest-pos line-skip)
+                             (inc dest-pos))
+                           (second data))))))
            )))))
 
 ;;(load "swing-text")(in-ns 'swing-text)(def tmp (jconsole))
