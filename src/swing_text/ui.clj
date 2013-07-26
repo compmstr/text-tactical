@@ -55,6 +55,29 @@
      rect is specified as [x y w h]")
   )
 
+(defn clamp-rect
+  "Takes in a rectangle and clamps it to the viewport of con
+   returns [new-rect <differences between old/new>"
+  [^swing_text.ui.Console con [x y w h :as rect]]
+  (let [[width height] (.grid-size con)
+        new-rect [(max x 0)
+                  (max y 0)
+                  (min w width)
+                  (min h height)]]
+    [new-rect (map (comp #(Math/abs ^Integer %) -) rect new-rect)]))
+
+(defn clamp-data
+  [data w h [x y w-diff h-diff]]
+  (let [max-line (max (- h h-diff) 0)
+        new-w (max (- w w-diff) 0)]
+    (loop [new-data []
+           line 0]
+      (if (>= line max-line)
+        new-data
+        (recur
+         (concat new-data (take new-w (drop (+ x (* w line)) data)))
+         (inc line))))))
+
 (defn capture-std-out
   [^swing_text.ui.Console console]
   (let [input (PipedInputStream.)
