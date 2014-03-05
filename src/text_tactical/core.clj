@@ -19,3 +19,12 @@
   (events/on-any-key
    (.component @window)
    game/game-start))
+
+(defn test-blit
+  [x y w h]
+  (when (not @window)
+    (create-window))
+  (.clear! @window)
+  (.blit! @window (repeat (* w h) {:char \.})
+         [x y w h])
+  (.repaint @window))
