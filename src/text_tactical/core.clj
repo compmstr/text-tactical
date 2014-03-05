@@ -3,6 +3,7 @@
   (require [swing-text.ui :as ui]
            [swing-text.events :as events]
            [swing-text.menu :as menu]
+           [swing-text.util :as util]
            [text-tactical.window :as window]
            [text-tactical.game :as game]))
 
@@ -21,10 +22,10 @@
    game/game-start))
 
 (defn test-blit
-  [x y w h]
+  [[x y w h :as rect]]
   (when (not @window)
     (create-window))
-  (.clear! @window)
-  (.blit! @window (repeat (* w h) {:char \.})
-         [x y w h])
-  (.repaint @window))
+  (let [data (repeat (* w h) {:char \.})]
+    (.clear! @window)
+    (.blit! @window data rect)
+    (.repaint @window)))

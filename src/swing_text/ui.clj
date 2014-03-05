@@ -245,11 +245,13 @@
                   (recur (rest data)
                          (inc pos)
                          (second data)))))
-            (blit! [this data [x y w h]]
+            (blit! [this data [x y w h :as rect]]
               "Fill buffer area with data, provided as seqable list of maps with keys:
                  :char :fg :bg
                rect is specified as [x y w h]"
-              (let [[disp-w disp-h] (.grid-size this)
+              (let [[[x y w h :as rect] diff] (clamp-rect (.grid-size this) rect)
+                    data (clamp-data data w h diff)
+                    [disp-w disp-h] (.grid-size this)
                     start-pos (+ x (* y disp-w))
                     line-end (dec (+ x w))
                     line-skip (- disp-w (dec w))]
